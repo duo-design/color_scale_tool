@@ -7,13 +7,11 @@
         --field-spacing: 1.5em;
         --number-width: 4em;
         --inside-field-gap: 1em;
-        --border: 2px solid #999;
+        --border: 2px solid #777;
       }
 
       body {
-        background-color: #777777;
-        color: white;
-        margin: var(--box-padding);
+        margin: 1em;
       }
 
       .black-background {
@@ -22,13 +20,25 @@
       }
 
       .grey-background {
-        background-color: #777777;
-        color: white;
+        background-color: #aaaaaa;
+        color: black;
       }
 
       .white-background {
         background-color: white;
         color: black;
+      }
+
+      .black-background .not-visible {
+        color: #c55;
+      }
+
+      .grey-background .not-visible {
+        color: #600;
+      }
+
+      .white-background .not-visible {
+        color: #900;
       }
       
       * {
@@ -38,6 +48,10 @@
 
       *:first-child {
         margin-top: 0;
+      }
+
+      h1 {
+        font-size: 48px;
       }
 
       h2 {
@@ -59,20 +73,37 @@
         text-align: right;
         font-weight: bold;
         max-width: 12em;
+        font-size: 14px;
+        align-self: baseline;
       }
 
+      textarea,
       input {
         font-family: monospace;
       }
 
+      textarea {
+        resize: vertical;
+        min-height: 25em;
+      }
+
+      .sliders .manual-controls {
+        display: none;
+      }
+
+      .manual .slider-controls {
+        display: none;
+      }
+
       .ui {
         display: grid;
+        align-items: start;
+        width: min-content;
+        gap: calc((var(--box-padding) * 2) / 3) var(--box-padding);
         grid-template-areas:
           "app-heading app-heading"
           "controls swatches"
           "blank    swatches";
-        gap: var(--box-padding);
-        width: min-content;
       }
 
       .ui > * {
@@ -82,13 +113,14 @@
 
       .box {
         display: grid;
-        grid-template-columns: max-content var(--number-width) auto;
+        align-items: center;
+        grid-template-columns: 9em var(--number-width) auto;
         gap: var(--field-spacing) var(--inside-field-gap);
-        padding: var(--box-padding);
+        padding: calc((var(--box-padding) * 2) / 3) var(--box-padding);
         background-color: white;
         color: black;
         border: var(--border);
-        width: 30em;
+        width: 25em;
       }
 
       .box > * {
@@ -105,56 +137,62 @@
 
       .swatches {
         display: grid;
-        grid-template-columns: 25em 10em 25em;
-        grid-auto-rows: 3em;
+        grid-template-columns: repeat(25, auto);
         grid-area: swatches;
         width: max-content;
-        gap: 0 1em;
+        gap: 0 2px
       }
 
       .swatch-color {
-        height: 100%;
+        width: 12em;
+        text-align: right;
         border-left: var(--border);
         border-right: var(--border);
         font-family: monospace;
-        padding: 0.2em;
+        padding: 0.5em;
         box-sizing: border-box;
-        font-size: 12px;
+        font-size: 14px;
         display: flex;
         justify-content: flex-end;
         align-items: flex-end;
       }
 
-      .swatch-color:nth-child(2) {
-        border-top: var(--border);
-      }
-
-      .swatch-color:nth-last-child(2) {
-        border-bottom: var(--border);
-      }
-
       .text-input,
-      .select-input {
+      .select-input,
+      .text-area {
         grid-column: 2 / -1;
       }
 
+      .a11y-test-results {
+        display: flex;
+        align-items: stretch;
+      }
+
+      .a11y-test *,
       .a11y-test {
-        padding: 0.2em 0.6em;
-        border-radius: 1em;
-        border: var(--border);
-        align-self: center;
-        width: max-content;
-        text-shadow:
-           1px  1px 0px #00000033,
-          -1px -1px 0px #ffffff33;
+        font-size: 12px;
       }
-      .right-a11y-test {
-        justify-self: start;
-        text-align: left;
+
+      .a11y-test {
+        padding: 6px 3px;
+        gap: 3px;
+        margin: 2px 0;
+        text-align: center;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        align-content: center;
       }
-      .left-a11y-test {
-        justify-self: end;
-        text-align: right;
+
+      .a11y-test.measurement {
+        border: 0;
+        padding-left: 10px;
+        padding-right: 10px;
+      }
+
+      .a11y-test.fail {
+        visibility: hidden;
       }
     </style>
 
@@ -169,12 +207,6 @@
         <h1>
           BETA Color Scale Tool
         </h1>
-        <p>
-          <strong>Important note:</strong> the accessibility levels shown are the <strong>minimum allowable contrast</strong> for that content, not the recommended color.
-        </p>
-        <p>
-           For example, if this app says a color pair is okay for button backgrounds or 16px text, that is the <strong>lowest</strong> contrast allowed for buttons or 16px text. It is is usually preferrable to picker a higher contrast level than the minimum when possible.
-        </p>
       </header>
       <div class="controls box"></div>
       <div class="swatches"></div>

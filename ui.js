@@ -57,58 +57,86 @@ const BLACK = culori.converter("rgb")("black");
 
 const A11Y_TESTS = [
   {
-    name: "14px",
+    longName: "Disabled text",
+    shortName: "Disabled <br> text",
     size: "14px",
-    weight: "normal",
-    apca: 95,
-    wcag2: 4.5
-  },
-  {
-    name: "16px",
-    size: "16px",
-    weight: "normal",
-    apca: 85,
-    wcag2: 4.5
-  },
-  {
-    name: "18px (14px bold)",
-    size: "18px",
-    weight: "normal",
-    apca: 75,
-    wcag2: 4.5
-  },
-  {
-    name: "24px (18px bold)",
-    size: "24px",
-    weight: "normal",
-    apca: 65,
-    wcag2: 4.5
-  },
-  {
-    name: "24px bold, buttons, inputs",
-    size: "24px",
-    weight: "bold",
-    apca: 60,
-    wcag2: 3
-  },
-  {
-    name: "Visible (3px dividing lines, disabled text)",
-    size: "14px",
-    weight: "bold",
     apca: 30,
     wcag2: -1
   },
   {
-    name: "Barely visible (elevations)",
+    longName: "Lines that must be seen",
+    shortName: "Lines",
     size: "14px",
-    weight: "bold",
-    apca: 15,
+    apca: 30,
+    wcag2: 3
+  },
+  {
+    longName: "Solid icons",
+    shortName: "<strong>Solid <br> icons</strong>",
+    size: "24px",
+    apca: 60,
+    wcag2: 3
+  },
+  {
+    longName: "Outlined icons",
+    shortName: "Outlined <br> icons",
+    size: "16px",
+    apca: 75,
+    wcag2: 3
+  },
+  {
+    longName: "36px bold or 72px normal",
+    shortName: "<strong>36 bold</strong> 72 normal",
+    size: "14px",
+    apca: 60,
+    apcaMax: 90,
     wcag2: -1
+  },
+  {
+    longName: "24px bold",
+    shortName: "<strong>24 bold</strong>",
+    size: "24px",
+    apca: 60,
+    wcag2: 3
+  },
+  {
+    longName: "18px bold, 24px normal",
+    shortName: "<strong>18 bold</strong> 24 normal",
+    size: "24px",
+    apca: 65,
+    wcag2: 4.5
+  },
+  {
+    longName: "14-16px bold, outlined icons",
+    shortName: "<strong>14 bold</strong> <strong>16 bold</strong>",
+    size: "16px",
+    apca: 75,
+    wcag2: 4.5
+  },
+  {
+    longName: "18px",
+    shortName: "18",
+    size: "18px",
+    apca: 75,
+    wcag2: 4.5
+  },
+  {
+    longName: "16px",
+    shortName: "16",
+    size: "16px",
+    apca: 85,
+    wcag2: 4.5
+  },
+  {
+    longName: "14px",
+    shortName: "14",
+    size: "14px",
+    apca: 95,
+    wcag2: 4.5
   },
 ];
 
 const DEFAULT_SCALE = {
-  type: "perceptual",
   text: "18",
   step_count: 16,
   hue: 240,
@@ -120,6 +148,10 @@ const DEFAULT_SCALE = {
   tilt_light: 0,
   test_color_1: "#000000",
   test_color_2: "#ffffff",
+  manual_scale: "#002d21 Green 1\n#005d49 Green 2\n#009072 Green 3\n#00c69d Green 4\n#00fecb Green 5",
+  text_vs_background: "test-is-text",
+  preview_background: "white-background",
+  input_type: "sliders"
 };
 
 const SCALE = DEFAULT_SCALE;
@@ -237,49 +269,86 @@ const getRatio = (color1, color2) => {
   return (luminances[1] + 0.05) / (luminances[0] + 0.05);
 };
 
-const createA11yPreview = (textColor, bgColor, className="") => {
-  const passingTests = A11Y_TESTS.filter((test) => (
-    (getAbsLc(textColor, bgColor) >= test.apca) &&
-    (getRatio(textColor, bgColor) >= test.wcag2)
-  ));
+const createA11yPreview = ({text, background, reverse=false, invalid=false}) => {
+  const results = [];
 
-  if (passingTests.length === 0) {
-    return tag("DIV");
+  if (invalid) {
+    for (var i = A11Y_TESTS.length; i >= 0; i--) {
+      results.push(tag("DIV"));
+    }
   } else {
-    const smallestAllowed = passingTests[0];
-    return tag("DIV", smallestAllowed.name, {
-      class: `a11y-test ${className}`,
-      style: `
-        color: ${culori.formatHex(textColor)};
-        background-color: ${culori.formatHex(bgColor)};
-        font-weight: ${smallestAllowed.weight};
-        font-size: ${smallestAllowed.size}
-      `,
+    const lc = getAbsLc(text, background);
+    const ratio = getRatio(text, background);
+
+    results.push(
+      (lc >= 15) ?
+        (
+          tag(
+            "DIV",
+            `<strong>Lc ${lc.toFixed(0)}</strong> ${ratio.toFixed(1)} : 1`,
+            {class: "a11y-test measurement"}
+          )
+        ) : (
+          tag(
+            "DIV",
+            "Not <br> Visible",
+            {class: "a11y-test measurement not-visible"}
+          )
+        )
+    );
+
+    A11Y_TESTS.forEach((test) => {
+      const passesTest = ((lc >= test.apca) && (ratio >= test.wcag2) && (lc <= (test.apcaMax || Infinity)));
+
+      results.push(
+        tag("DIV", test.shortName, {
+          class: `a11y-test ${passesTest ? "pass" : "fail"} `,
+          style: `
+            background-color: ${culori.formatHex(background)};
+            color: ${culori.formatHex(text)};
+          `
+        })
+      );
     });
   }
+
+  return reverse ? results.reverse() : results;
 }
 
-const createSwatch = (step) => {
-  const color = getStep(step);
+const createSwatch = ({color, name=null, invalid=false}) => {
   const colorHex = culori.formatHex(color);
-  const darkLabel = BLACK;
-  const lightLabel = WHITE;
-  const labelHex = culori.formatHex(
-    (getAbsLc(lightLabel, color) > getAbsLc(darkLabel, color)) ?
-      lightLabel :
-      darkLabel
-  );
+  const labelHex =
+    (getAbsLc(WHITE, color) > getAbsLc(BLACK, color)) ? "#ffffff" : "#000000";
+
+  const colorSwatch = tag("DIV", (invalid ? "invalid CSS" : `${name || ""} <br> ${colorHex}`), {
+    class: "swatch-color",
+    style: `
+      background-color: ${colorHex};
+      color: ${labelHex};
+    `
+  });
+
+  const testColors1 = [culori.parse(SCALE.test_color_1), color];
+  const testColors2 = [culori.parse(SCALE.test_color_2), color];
+
+  if (SCALE.text_vs_background === "test-is-text") {
+    testColors1.reverse();
+    testColors2.reverse();
+  }
 
   return [
-    createA11yPreview(culori.parse(SCALE.test_color_1), color, "left-a11y-test"),
-    tag("DIV", colorHex, {
-      class: "swatch-color",
-      style: `
-        background-color: ${colorHex};
-        color: ${labelHex};
-      `
+    ...createA11yPreview({
+      background: testColors1[0],
+      text: testColors1[1],
+      reverse: true,
+      invalid: invalid
     }),
-    createA11yPreview(culori.parse(SCALE.test_color_2), color,  "right-a11y-test"),
+    colorSwatch,
+    ...createA11yPreview({
+      background: testColors2[0],
+      text: testColors2[1],
+      invalid: invalid
+    }),
   ];
 };
 
@@ -287,25 +356,51 @@ const rerenderScale = () => {
   document.body.classList.remove(
     "black-background",
     "white-background",
-    "grey-background"
+    "grey-background",
+    "manual",
+    "sliders",
   );
 
   document.body.classList.add(SCALE.preview_background);
+  document.body.classList.add(SCALE.input_type);
 
   const swatches = querySelector(".swatches");
   swatches.innerHTML = "";
 
-  for (let i = 0; i < SCALE.step_count; i++) {
-    swatches.append(...createSwatch(i));
+  if (SCALE.input_type === "manual") {
+    const lines = SCALE.manual_scale.trim().split(/\s*\n\s*/);
+    const strings = lines.map((line) => {
+      const [color, ...name] = line.trim().split(/\s+/);
+      return [color, name.join(" ")]
+    });
+    const colorNamePairs = strings.map(
+      ([unparsed, name]) => [culori.parse(unparsed), name]
+    );
+
+    for (const [color, name] of colorNamePairs) {
+      if (color) {
+        swatches.append(...createSwatch({color, name}));
+      } else {
+        swatches.append(...createSwatch({
+          color: culori.parse("#dd0022"),
+          invalid: true
+        }));
+      }
+    }
+  } else { 
+    for (let i = 0; i < SCALE.step_count; i++) {
+      swatches.append(...createSwatch({color: getStep(i)}));
+    }
   }
 };
 
 const createNumericField = (
   label,
   name,
-  {min, max, syncWith, noGreaterThan, noLessThan}
+  {min, max, syncWith, noGreaterThan, noLessThan},
+  className
 ) => {
-  const numberLabel = tag("LABEL", label);
+  const numberLabel = tag("LABEL", label, {class: className});
   const digital = tag("INPUT");
   const slider = tag("INPUT");
 
@@ -318,7 +413,7 @@ const createNumericField = (
         max,
         step: 1,
         value: SCALE[name],
-        class: `numeric-${type}`,
+        class: `numeric-${type} ${className}`,
         name: `${name}_${type}`
       }
     );
@@ -361,9 +456,9 @@ const createNumericField = (
   return [numberLabel, digital, slider];
 };
 
-const createSelector = (label, name, options) => {
-  const selectLabel = tag("LABEL", label);
-  const select = tag("SELECT", null, {class: "select-input"});
+const createSelector = (label, name, options, className) => {
+  const selectLabel = tag("LABEL", label, {class: className});
+  const select = tag("SELECT", null, {class: `select-input ${className}`});
 
   for (const [optionLabel, value, description] of options) {
     select.append(tag("OPTION", optionLabel, {value}));
@@ -378,13 +473,28 @@ const createSelector = (label, name, options) => {
   return [selectLabel, select];
 }
 
-const createTextField = (label, name) => {
-  const inputLabel = tag("LABEL", label);
-  const input = tag("INPUT", null, {class: "text-input"});
+const createTextField = (label, name, className) => {
+  const inputLabel = tag("LABEL", label, {class: className});
+  const input = tag("INPUT", null, {class: `text-input ${className}`});
 
   input.value = SCALE[name]
 
-  input.addEventListener('change', (event) => {
+  input.addEventListener('input', (event) => {
+    const {value} = event.target;
+    SCALE[name] = value;
+    rerenderScale();
+  })
+
+  return [inputLabel, input];
+}
+
+const createTextarea = (label, name, className) => {
+  const inputLabel = tag("LABEL", label, {class: className});
+  const input = tag("TEXTAREA", null, {class: `text-area ${className}`});
+
+  input.value = SCALE[name]
+
+  input.addEventListener('input', (event) => {
     const {value} = event.target;
     SCALE[name] = value;
     rerenderScale();
@@ -394,44 +504,65 @@ const createTextField = (label, name) => {
 }
 
 querySelector(".controls").append(
-  tag("H2", "Scale Type"),
+  tag("H2", "Scale settings"),
+
+  ...createSelector(
+    "Scale input type",
+    "input_type",
+    [
+      ["Control with silders", "sliders"],
+      ["Manually enter CSS colors", "manual"],
+    ]
+  ),
+
+  ...createTextarea(
+    "CSS values",
+    "manual_scale",
+    "manual-controls"
+  ),
 
   ...createNumericField(
     "Number of colors",
     "step_count",
-    {min: 3, max: 30}
+    {min: 3, max: 20},
+    "slider-controls"
   ),
 
   ...createNumericField(
-    "Visually even steps vs. even accessible options",
+    "Even steps vs. even readability changes",
     "scale_balance",
-    {min: 0, max: 100}
+    {min: 0, max: 100},
+    "slider-controls"
   ),
 
-  tag("H2", "Color"),
+  tag("H2", "Color", {class: "slider-controls"}),
 
   ...createNumericField(
     "Saturation",
     "saturation",
-    {min: 0, max: 100}
+    {min: 0, max: 100},
+    "slider-controls"
   ),
 
   ...createNumericField(
     "Hue",
     "hue",
-    {min: 0, max: 360}
+    {min: 0, max: 360},
+    "slider-controls"
   ),
 
   ...createNumericField(
     "Darkest value",
     "dark_value",
-    {min: 0, max: 100, noGreaterThan: "light_value"}
+    {min: 0, max: 100, noGreaterThan: "light_value"},
+    "slider-controls"
   ),
 
   ...createNumericField(
     "Lightest value",
     "light_value",
-    {min: 0, max: 100, noLessThan: "dark_value"}
+    {min: 0, max: 100, noLessThan: "dark_value"},
+    "slider-controls"
   ),
 
   // tag("h2", "Tweaks"),
@@ -451,18 +582,27 @@ querySelector(".controls").append(
   tag("h2", "Preview options"),
 
   ...createSelector(
-    "Background",
-    "preview_background",
+    "Test color use",
+    "text_vs_background",
     [
-      ["Middle Grey", "grey-background"],
-      ["White",       "white-background"],
-      ["Black",       "black-background"],
+      ["Test color is text", "test-is-text"],
+      ["Test color is background",  "test-is-background"],
     ]
   ),
 
-  ...createTextField("Accessibility test color 1", "test_color_1"),
+  ...createTextField("Test color 1", "test_color_1"),
 
-  ...createTextField("Accessibility test color 2", "test_color_2"),
+  ...createTextField("Test color 2", "test_color_2"),
+
+  ...createSelector(
+    "Tool background",
+    "preview_background",
+    [
+      ["White", "white-background"],
+      ["Grey",  "grey-background"],
+      ["Black", "black-background"],
+    ]
+  ),
 );
 
 rerenderScale();
